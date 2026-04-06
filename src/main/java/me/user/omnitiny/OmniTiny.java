@@ -53,7 +53,8 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
                 p.sendMessage("§aРазмер изменен на " + size);
             }
             case "crawl" -> {
-                p.setPose(p.getPose() == Pose.CRAWLING ? Pose.STANDING : Pose.CRAWLING, true);
+    p.setPose(p.getPose() == Pose.SWIMMING ? Pose.STANDING : Pose.SWIMMING, true);
+}
             }
             case "v" -> {
                 if (p.getVehicle() != null) {
@@ -121,8 +122,12 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
                 Bukkit.getOnlinePlayers().forEach(p -> { if(!p.equals(big)) p.hidePlayer(this, small); });
             }
             case 8 -> { // Поцелуй
-                big.lookAt(small.getEyeLocation());
-                small.getWorld().spawnParticle(Particle.HEART, small.getEyeLocation().add(0, 0.3, 0), 7);
+    Location loc = big.getLocation();
+    loc.setDirection(small.getEyeLocation().toVector().subtract(big.getEyeLocation().toVector()));
+    big.teleport(loc);
+    small.getWorld().spawnParticle(Particle.HEART, small.getEyeLocation().add(0, 0.3, 0), 7);
+ }
+
             }
         }
         startActionBar(big);
