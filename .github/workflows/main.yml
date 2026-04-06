@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-get: ubuntu-latest
+    runs-on: ubuntu-latest # Исправил тут!
 
     steps:
     - uses: actions/checkout@v4
