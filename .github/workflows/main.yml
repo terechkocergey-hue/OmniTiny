@@ -14,7 +14,10 @@ jobs:
           java-version: '21'
           distribution: 'microsoft'
 
-      - name: Setup Gradle and Build
-        uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          arguments: build  # Вот эта строчка — самая важная!
+          gradle-version: 8.10  # Это заменяет недостающий файл wrapper!
+
+      - name: Build with Gradle
+        run: gradle build
