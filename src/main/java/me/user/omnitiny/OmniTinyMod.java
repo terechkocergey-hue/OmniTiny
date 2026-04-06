@@ -5,6 +5,6 @@ import net.fabricmc.api.ModInitializer;
 public class OmniTinyMod implements ModInitializer {
     @Override
     public void onInitialize() {
-        // Пусто для теста сборки
+        // Пусто
     }
 }
