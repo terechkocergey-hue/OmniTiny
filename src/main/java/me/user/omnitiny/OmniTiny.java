@@ -11,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -53,16 +52,13 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
                 p.sendMessage("§aРазмер изменен на " + size);
             }
             case "crawl" -> {
-    p.setPose(p.getPose() == Pose.SWIMMING ? Pose.STANDING : Pose.SWIMMING, true);
-}
+                p.setPose(p.getPose() == Pose.SWIMMING ? Pose.STANDING : Pose.SWIMMING, true);
             }
             case "v" -> {
                 if (p.getVehicle() != null) {
                     Entity vehicle = p.getVehicle();
                     vehicle.removePassenger(p);
                     if (vehicle instanceof ArmorStand) vehicle.remove();
-                    // Возвращаем видимость
-                    Bukkit.getOnlinePlayers().forEach(pl -> pl.showPlayer(this, p));
                     p.setPose(Pose.STANDING, true);
                     p.sendMessage("§eВы слезли.");
                 }
@@ -110,24 +106,19 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
         big.closeInventory();
         
         switch (e.getRawSlot()) {
-            case 0 -> { // Голова
+            case 0 -> {
                 big.addPassenger(small);
                 small.setPose(Pose.SNEAKING, true);
             }
             case 1 -> startClinging(big, small, "CHEST");
             case 2 -> startClinging(big, small, "CLIMB");
             case 3 -> startClinging(big, small, "SNEAKER");
-            case 4 -> { // Карман
-                big.addPassenger(small);
-                Bukkit.getOnlinePlayers().forEach(p -> { if(!p.equals(big)) p.hidePlayer(this, small); });
-            }
-            case 8 -> { // Поцелуй
-    Location loc = big.getLocation();
-    loc.setDirection(small.getEyeLocation().toVector().subtract(big.getEyeLocation().toVector()));
-    big.teleport(loc);
-    small.getWorld().spawnParticle(Particle.HEART, small.getEyeLocation().add(0, 0.3, 0), 7);
- }
-
+            case 4 -> big.addPassenger(small);
+            case 8 -> {
+                Location loc = big.getLocation();
+                loc.setDirection(small.getEyeLocation().toVector().subtract(big.getEyeLocation().toVector()));
+                big.teleport(loc);
+                small.getWorld().spawnParticle(Particle.HEART, small.getEyeLocation().add(0, 0.3, 0), 7);
             }
         }
         startActionBar(big);
@@ -158,7 +149,7 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
                     Vector side = new Vector(-dir.getZ(), 0, dir.getX()).multiply(0.2);
                     target = loc.clone().add(side).subtract(0, 1.6, 0);
                     small.setPose(Pose.SNEAKING, true);
-                } else { // CLIMB
+                } else {
                     if (small.getLocation().getPitch() < -45) climbY = Math.min(climbY + 0.05, 1.7);
                     if (small.getLocation().getPitch() > 45) climbY = Math.max(climbY - 0.05, 0.2);
                     target = loc.clone().add(dir.multiply(0.2));
