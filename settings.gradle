@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        maven { url = "https://maven.fabricmc.net/" } // Здесь живет fabric-loom
+        maven { url = "https://maven.fabricmc.net/" }
         gradlePluginPortal()
     }
 }
