@@ -1,0 +1,11 @@
+name: OmniTiny
+version: 1.0
+main: me.user.omnitiny.OmniTiny
+api-version: '1.21'
+commands:
+  scale:
+    description: Изменить размер (0.18 = 3 пикселя)
+  v:
+    description: Взаимодействовать/Слезть
+  crawl:
+    description: Ползать по земле
