@@ -1,5 +1,6 @@
 name: Build OmniTiny Mod
 on: [push, pull_request]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,18 +12,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: 'microsoft'
 
-      - name: Setup Gradle
+      - name: Setup Gradle and Build
         uses: gradle/actions/setup-gradle@v3
-
-      - name: Build Mod
-        # Мы используем 'gradle build' напрямую вместо './gradlew', 
-        # так как у нас нет локального скрипта-обертки
-        run: gradle build
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
         with:
-          name: OmniTiny-Mod
-          path: build/libs/*.jar
+          arguments: build  # Вот эта строчка — самая важная!
