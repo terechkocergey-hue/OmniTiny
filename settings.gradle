@@ -1,1 +1,8 @@
+pluginManagement {
+    repositories {
+        maven { url = "https://maven.fabricmc.net/" } // Здесь живет fabric-loom
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'omnitiny'
