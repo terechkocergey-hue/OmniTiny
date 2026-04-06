@@ -8,6 +8,7 @@ group = 'me.user.omnitiny'
 repositories {
     maven { url "https://maven.terraformersmc.com/releases/" }
     maven { url "https://jitpack.io" }
+    mavenCentral()
 }
 
 dependencies {
@@ -16,7 +17,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.15.11"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.102.0+1.21.1"
     
-    // Библиотека для изменения роста
+    // Pehkui для твоего уменьшения
     modImplementation "com.github.Virtuoel:Pehkui:3.8.0+1.21.1"
 }
 
