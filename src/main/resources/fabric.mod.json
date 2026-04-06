@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "omnitiny",
+  "version": "${version}",
+  "name": "OmniTiny",
+  "description": "Мод на взаимодействие маленьких и больших игроков",
+  "authors": [
+    "User"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/user/omnitiny"
+  },
+  "license": "MIT",
+  "icon": "assets/omnitiny/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "me.user.omnitiny.OmniTinyMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
