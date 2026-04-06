@@ -39,6 +39,7 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
         getCommand("sit").setExecutor(this);
         getCommand("lay").setExecutor(this);
         getCommand("hug").setExecutor(this);
+        getCommand("pray").setExecutor(this);
         setupNoCollision();
     }
 
@@ -52,137 +53,107 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player p)) return true;
-
         switch (cmd.getName().toLowerCase()) {
             case "scale" -> {
                 double size = (args.length > 0) ? Double.parseDouble(args[0]) : 1.0;
                 p.getAttribute(Attribute.GENERIC_SCALE).setBaseValue(size);
-                p.sendMessage("§aРазмер изменен на " + size);
-            }
-            case "crawl", "lay" -> toggleLay(p);
-            case "sit" -> toggleSit(p);
-            case "hug" -> {
-                Player target = null;
-                for (Entity en : p.getNearbyEntities(2, 2, 2)) {
-                    if (en instanceof Player other && other != p) {
-                        target = other; break;
-                    }
-                }
-                if (target != null) {
-                    startClinging(target, p, "HUG");
-                    p.sendMessage("§dВы обняли " + target.getName() + " за ногу!");
-                } else {
-                    p.sendMessage("§cРядом никого нет.");
-                }
+                p.sendMessage("§aРазмер изменен!");
             }
             case "v" -> {
                 if (p.getVehicle() != null) {
-                    Entity vehicle = p.getVehicle();
-                    vehicle.removePassenger(p);
-                    if (vehicle instanceof ArmorStand) vehicle.remove();
+                    Entity v = p.getVehicle();
+                    v.removePassenger(p);
+                    if (v instanceof ArmorStand) v.remove();
                 }
                 p.setSwimming(false);
                 p.removePotionEffect(PotionEffectType.SLOWNESS);
+                p.removePotionEffect(PotionEffectType.INVISIBILITY);
                 p.setPose(Pose.STANDING, true);
-                p.sendMessage("§eВы встали/слезли.");
+                p.sendMessage("§eВы встали/вылезли.");
             }
+            case "crawl", "lay" -> forceLay(p, p.getLocation());
+            case "sit" -> toggleSit(p);
+            case "pray" -> p.setPose(Pose.SNEAKING, true);
         }
         return true;
     }
 
-    private void toggleLay(Player p) {
-        if (p.getPose() == Pose.SWIMMING) {
-            p.setSwimming(false);
-            p.removePotionEffect(PotionEffectType.SLOWNESS);
-            p.setPose(Pose.STANDING, true);
-            p.sendMessage("§eВы встали.");
-        } else {
-            p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 999999, 10, false, false));
-            p.setSwimming(true);
-            p.setPose(Pose.SWIMMING, true);
-            p.sendMessage("§dВы легли отдыхать.");
-        }
+    private void forceLay(Player p, Location loc) {
+        if (p.getVehicle() != null) { p.getVehicle().remove(); return; }
+        ArmorStand anchor = p.getWorld().spawn(loc.clone().subtract(0, 1.4, 0), ArmorStand.class, s -> {
+            s.setVisible(false); s.setMarker(true); s.setGravity(false);
+        });
+        anchor.addPassenger(p);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 999999, 10, false, false));
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (p.getVehicle() == null) { anchor.remove(); this.cancel(); return; }
+                p.setSwimming(true);
+            }
+        }.runTaskTimer(this, 0L, 5L);
     }
 
     private void toggleSit(Player p) {
-        if (p.getVehicle() != null) {
-            p.getVehicle().remove();
-            p.sendMessage("§eВы встали.");
-        } else {
-            double size = p.getAttribute(Attribute.GENERIC_SCALE).getValue();
-            double offset = (size < 0.5) ? 0.1 : -0.7; 
-            ArmorStand chair = p.getWorld().spawn(p.getLocation().add(0, offset, 0), ArmorStand.class, s -> {
-                s.setVisible(false); s.setMarker(true); s.setGravity(false); s.setPersistent(false);
-            });
-            chair.addPassenger(p);
-            p.sendMessage("§aВы присели.");
-        }
-    }
-
-    @EventHandler
-    public void onBedClick(PlayerInteractEvent e) {
-        Player p = e.getPlayer();
-        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
-            if (e.getClickedBlock().getBlockData() instanceof Bed) {
-                if (p.getAttribute(Attribute.GENERIC_SCALE).getValue() < 0.5) {
-                    e.setCancelled(true);
-                    Location bedLoc = e.getClickedBlock().getLocation().add(0.5, 0.4, 0.5);
-                    p.teleport(bedLoc);
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 999999, 10, false, false));
-                    p.setSwimming(true);
-                    p.setPose(Pose.SWIMMING, true);
-                    p.sendMessage("§dПрилегли рядышком...");
-                }
-            }
-        }
+        if (p.getVehicle() != null) { p.getVehicle().remove(); return; }
+        double size = p.getAttribute(Attribute.GENERIC_SCALE).getValue();
+        double offset = (size < 0.5) ? 0.15 : -0.45;
+        ArmorStand chair = p.getWorld().spawn(p.getLocation().add(0, offset, 0), ArmorStand.class, s -> {
+            s.setVisible(false); s.setMarker(true); s.setGravity(false);
+        });
+        chair.addPassenger(p);
     }
 
     @EventHandler
     public void onInteract(PlayerInteractEntityEvent e) {
         if (!(e.getRightClicked() instanceof Player target)) return;
         Player p = e.getPlayer();
+        if (!p.isSneaking()) return;
+
         double pSize = p.getAttribute(Attribute.GENERIC_SCALE).getValue();
         double tSize = target.getAttribute(Attribute.GENERIC_SCALE).getValue();
 
-        if (p.isSneaking()) {
-            if (pSize < tSize) {
-                openInteractionMenu(p, target);
-            } else if (pSize > tSize) {
-                p.addPassenger(target);
-                target.sendMessage("§6" + p.getName() + " §eвзял вас на руки!");
-            }
+        if (pSize < tSize) {
+            openMenu(p, target, "Малыш: Выбери действие");
+        } else {
+            openMenu(p, target, "Большой: Куда его посадить?");
         }
     }
 
-    private void openInteractionMenu(Player small, Player big) {
-        Inventory gui = Bukkit.createInventory(null, 9, "Действие с " + big.getName());
-        String uuid = big.getUniqueId().toString();
+    private void openMenu(Player viewer, Player other, String title) {
+        Inventory gui = Bukkit.createInventory(null, 9, title);
+        String uuid = other.getUniqueId().toString();
         gui.setItem(0, createItem(Material.GOLDEN_HELMET, "§eНа голову", uuid));
-        gui.setItem(1, createItem(Material.IRON_CHESTPLATE, "§bНа грудь", uuid));
-        gui.setItem(2, createItem(Material.LADDER, "§aЛазать", uuid));
-        gui.setItem(3, createItem(Material.LEATHER_BOOTS, "§6Обнять ногу", uuid));
+        gui.setItem(1, createItem(Material.LEATHER_CHESTPLATE, "§bВ карман", uuid));
+        gui.setItem(2, createItem(Material.IRON_BOOTS, "§6В кроссовок", uuid));
+        gui.setItem(3, createItem(Material.CHAINMAIL_CHESTPLATE, "§aНа плечо", uuid));
+        gui.setItem(4, createItem(Material.OAK_STAIRS, "§cЖивой стул", uuid)); // НОВОЕ
         gui.setItem(8, createItem(Material.HEART_OF_THE_SEA, "§dПоцелуй", uuid));
-        small.openInventory(gui);
+        viewer.openInventory(gui);
     }
 
     @EventHandler
     public void onMenuClick(InventoryClickEvent e) {
-        if (!e.getView().getTitle().startsWith("Действие с")) return;
-        e.setCancelled(true);
-        if (e.getCurrentItem() == null) return;
-        Player small = (Player) e.getWhoClicked();
-        UUID bigId = UUID.fromString(e.getCurrentItem().getItemMeta().getLore().get(0));
-        Player big = Bukkit.getPlayer(bigId);
-        if (big == null) return;
-        small.closeInventory();
-        
-        switch (e.getRawSlot()) {
-            case 0 -> { big.addPassenger(small); small.setPose(Pose.SNEAKING, true); }
-            case 1 -> startClinging(big, small, "CHEST");
-            case 2 -> startClinging(big, small, "CLIMB");
-            case 3 -> startClinging(big, small, "HUG"); 
-            case 8 -> {
-                small.getWorld().spawnParticle(Particle.HEART, small.getEyeLocation().add(0, 0.3, 0), 7);
+        if (e.getView().getTitle().contains("Выбери") || e.getView().getTitle().contains("Куда")) {
+            e.setCancelled(true);
+            if (e.getCurrentItem() == null) return;
+            
+            Player actor = (Player) e.getWhoClicked();
+            UUID otherId = UUID.fromString(e.getCurrentItem().getItemMeta().getLore().get(0));
+            Player target = Bukkit.getPlayer(otherId);
+            if (target == null) return;
+            actor.closeInventory();
+
+            Player small = (actor.getAttribute(Attribute.GENERIC_SCALE).getValue() < target.getAttribute(Attribute.GENERIC_SCALE).getValue()) ? actor : target;
+            Player big = (small == actor) ? target : actor;
+
+            switch (e.getRawSlot()) {
+                case 0 -> startClinging(big, small, "HEAD");
+                case 1 -> startClinging(big, small, "POCKET");
+                case 2 -> startClinging(big, small, "SHOE");
+                case 3 -> startClinging(big, small, "SHOULDER");
+                case 4 -> startClinging(big, small, "CHAIR"); // НОВОЕ
+                case 8 -> big.getWorld().spawnParticle(Particle.HEART, big.getEyeLocation(), 5);
             }
         }
     }
@@ -191,31 +162,44 @@ public class OmniTiny extends JavaPlugin implements Listener, CommandExecutor {
         ArmorStand anchor = big.getWorld().spawn(big.getLocation(), ArmorStand.class, s -> {
             s.setVisible(false); s.setMarker(true); s.setGravity(false);
         });
-        anchor.addPassenger(small);
+        
+        if (mode.equals("CHAIR")) {
+            // В режиме стула Большой садится на Маленького
+            anchor.addPassenger(big);
+        } else {
+            // В остальных режимах Маленький садится на Большого
+            anchor.addPassenger(small);
+        }
+
+        if (mode.equals("POCKET")) small.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 999999, 0, false, false));
+
         new BukkitRunnable() {
-            double climbY = 1.0;
             @Override
             public void run() {
                 if (!big.isOnline() || !small.isOnline() || anchor.getPassengers().isEmpty()) {
-                    anchor.remove(); this.cancel(); return;
+                    anchor.remove(); small.removePotionEffect(PotionEffectType.INVISIBILITY); this.cancel(); return;
                 }
                 Location loc = big.getLocation();
                 Vector dir = loc.getDirection().setY(0).normalize();
-                Location target;
-                if (mode.equals("CHEST")) {
-                    target = big.getEyeLocation().add(dir.multiply(0.3)).subtract(0, 0.7, 0);
-                    small.setPose(Pose.SWIMMING, true);
-                } else if (mode.equals("HUG")) {
-                    target = loc.clone().add(dir.multiply(0.25)).subtract(0, 1.45, 0);
-                    small.setPose(Pose.SNEAKING, true);
-                } else {
-                    if (small.getLocation().getPitch() < -45) climbY = Math.min(climbY + 0.05, 1.7);
-                    if (small.getLocation().getPitch() > 45) climbY = Math.max(climbY - 0.05, 0.2);
-                    target = loc.clone().add(dir.multiply(0.2));
-                    target.setY(loc.getY() + climbY);
+                Vector side = new Vector(-dir.getZ(), 0, dir.getX()).normalize();
+                Location tLoc;
+
+                switch (mode) {
+                    case "HEAD" -> tLoc = big.getEyeLocation().add(0, 0.35, 0);
+                    case "POCKET" -> tLoc = big.getLocation().add(side.multiply(0.3)).add(0, 0.8, 0);
+                    case "SHOE" -> tLoc = big.getLocation().add(dir.multiply(0.2)).subtract(0, 1.45, 0);
+                    case "SHOULDER" -> tLoc = big.getEyeLocation().add(side.multiply(0.4)).subtract(0, 0.6, 0);
+                    case "CHAIR" -> {
+                        // Маленький ложится на землю
+                        small.teleport(big.getLocation());
+                        small.setSwimming(true);
+                        // Большой сидит чуть выше Маленького
+                        tLoc = small.getLocation().subtract(0, 0.45, 0);
+                    }
+                    default -> tLoc = loc;
                 }
-                target.setYaw(loc.getYaw());
-                anchor.teleport(target);
+                tLoc.setYaw(big.getLocation().getYaw());
+                anchor.teleport(tLoc);
             }
         }.runTaskTimer(this, 0L, 1L);
     }
