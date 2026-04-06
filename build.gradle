@@ -8,7 +8,6 @@ group = 'me.user.omnitiny'
 repositories {
     maven { url "https://maven.terraformersmc.com/releases/" }
     maven { url "https://maven.wispforest.io/releases/" }
-    maven { url "https://cursemaven.com" } // Самый надежный запасной вариант
     mavenCentral()
 }
 
@@ -18,9 +17,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.15.11"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.102.0+1.21.1"
     
-    // Подключаем Pehkui через CurseMaven (ID проекта: 319596)
-    // Это гарантирует скачивание напрямую с серверов CurseForge
-    modImplementation "curse.maven:pehkui-319596:5650395" 
+    // Подключаем Pehkui — теперь через официальный путь автора
+    modImplementation "virtuoel.pehkui:Pehkui:3.8.3+1.21.1"
 }
 
 tasks.withType(JavaCompile).configureEach {
